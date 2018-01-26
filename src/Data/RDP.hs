@@ -1,7 +1,8 @@
 module Data.RDP where
 
-import Prelude hiding (abs)
-  
+import Prelude hiding (abs, head, tail, init, last, length, (++))
+import Data.Vector
+
 data Vector3 = Vector3 Float Float Float
   deriving (Show)
 
@@ -23,3 +24,33 @@ perpDist e1 e2 p = (dist e1 p) * sin theta
         cosTheta = (dotp a b) / (abs a * abs b)
         a = sub p e1
         b = sub e2 e1
+
+argMax :: (Ord a) => Vector Vector3 -> (Vector3 -> a) -> (Int, a)
+argMax vs f
+  | length vs == 0 = (-1, f (Vector3 0 0 0))
+  | length vs == 1 = (0, f (head vs))
+  | otherwise      = argMax' 0 (f (head vs)) 1 (tail vs)
+    where argMax' maxI maxV i vs' = if length vs' == 0 then
+                                      (maxI, maxV)
+                                    else
+                                      if f (head vs') > maxV then
+                                        argMax' i (f (head vs')) (i + 1) (tail vs')
+                                      else
+                                        argMax' maxI maxV (i + 1) (tail vs')
+
+rdp :: Vector Vector3 -> Float -> Vector Vector3
+rdp vs eps
+  | length vs < 3 = vs
+  | otherwise     = if dmax > eps then
+                      (init part1) ++ part2
+                    else
+                      fromList [vFirst,vLast]
+  where
+    l = length vs
+    vFirst = head vs
+    vLast  = last vs
+    vRest  = slice 1 (l - 2) vs
+    (i, dmax) = argMax vRest (\v -> perpDist vFirst vLast v)
+    part1 = slice 0 (i + 1) vRest
+    part2 = slice i (l - i) vRest
+    
